@@ -30,9 +30,9 @@ Each resource belongs to exactly one resource group.
 
 ### Azure physical infrastructure
 
-Azure's core architectural components can be broken down into two main groupings:&#x20;
+Azure's core architectural components can be broken down into two main groupings:
 
-* the physical infrastructure&#x20;
+* the physical infrastructure
 * and the management infrastructure
 
 #### Datacenters
@@ -53,7 +53,7 @@ Some services are only available in some regions, some global services, e.g.,g E
 
 #### Availability Zones
 
-A collection of one or more physical data centers within a single Azure Region.&#x20;
+A collection of one or more physical data centers within a single Azure Region.
 
 They are isolation boundaries; if one zone goes down, the others keep working
 
@@ -65,7 +65,7 @@ To ensure resiliency, a minimum of 3 AZs are available in all availability zone-
 Not all regions support AZs
 {% endhint %}
 
-You can protect your workloads by spreading them across availability zones within a region.&#x20;
+You can protect your workloads by spreading them across availability zones within a region.
 
 There is a cost to duplicating workloads and transferring data between zones.
 
@@ -75,13 +75,13 @@ _Zonal services_ - services pinned to a specific availability zone, e.g., a VM, 
 
 _Zone-redundant services_ - services that are automatically replicated across zones by the platform, e.g., zone-redundant storage, SQL databases
 
-_Non-regional services (global services)_ - services for which you don't select a region, e.g.,&#x20;
+_Non-regional services (global services)_ - services for which you don't select a region, e.g.,
 
 * _Entra ID_
 * _Azure DNS_
-* _Azure Traffic Manager_.&#x20;
+* _Azure Traffic Manager_.
 
-They are distributed globally across Microsoft's entire infrastructure.&#x20;
+They are distributed globally across Microsoft's entire infrastructure.
 
 Since they are regionless, a region or availability zone failure does not affect them
 
@@ -95,7 +95,7 @@ Since they are regionless, a region or availability zone failure does not affect
 
 #### Region pairs
 
-Most Azure regions are paired with another region that is at least 300 miles (482 km) away.&#x20;
+Most Azure regions are paired with another region that is at least 300 miles (482 km) away.
 
 Services are replicated across regions, so that services automaticall fail over to a region pair. e.g., the pair for West US is East US.
 
@@ -135,7 +135,7 @@ includes
 
 * Azure resources
 * Resource groups
-* Subscriptions&#x20;
+* Subscriptions
 * accounts
 
 #### Azure resources
@@ -203,7 +203,7 @@ Azure policy initiatives
 
 The cloud adoption framework offers _comprehensive technical guidance_ for Azure.
 
-it includes&#x20;
+it includes
 
 * best practices
 * documentation
@@ -231,7 +231,7 @@ Cloud adoption framework - govern methodology includes five steps
 1. (Build) Build a dedicated _cloud governance team_, responsible for defining, maintaining, and reporting on the progress of cloud governance policies
 2. (Risk Analysis) Conduct a thorough _risk assessment_ unique to your organization, addressing all risk categories, including regulatory, compliance, security, operations, costs, data, resource management, and AI-related risks.
 3. (Document) _Document cloud governance policies,_ including acceptable cloud usage, rules, and guidelines for mitigating identified risks
-4. (Enforce) _Enforce cloud governance policies_ - use automated and manual tools to ensure adherence to the cloud governance policies; these tools can be used to set guardrails and monitor configurations.&#x20;
+4. (Enforce) _Enforce cloud governance policies_ - use automated and manual tools to ensure adherence to the cloud governance policies; these tools can be used to set guardrails and monitor configurations.
 5. (Monitor) _Monitor cloud governance -_ Regularly monitor cloud usage and the governance teams to ensure compliance with established cloud governance policies
 
 Steps 2 - 5 are done continuously/iteratively
@@ -266,7 +266,7 @@ Azure policy
 * contains a compliance dashboard that presents an aggregated view of the environment's overall state, as well as a drilldown to detailed information. All compliance data is aggregated into a singular repository.
 * ensures consistent adherence to compliance standards and prevents misconfigurations.
 * offers bulk remediation for existing resources and automatic remediation for new resources.
-* evaluates your resources and highlights non-compliant resources. It can also prevent non-compliant resources from being created.&#x20;
+* evaluates your resources and highlights non-compliant resources. It can also prevent non-compliant resources from being created.
 * It also evaluates all your VMs, including VMs that were created before the policy was created.
 * comes with built-in initiative and policy definitions for some resources like storage, compute, networking, security center, and monitoring.
 * In some cases, it can automatically remediate non-compliant resources and configurations. You can mark a resource as an exception if you do not want Azure Policy to automatically update/remediate it.
@@ -293,7 +293,7 @@ It provides a management layer that allows you to create, update, and delete res
 
 All Azure operations go through it; portal, PowerShell, CLI, REST APIs, and SDKs all use the same ARM API for uniform results.
 
-Azure operations are split into&#x20;
+Azure operations are split into
 
 * _**The control plane**_
 
@@ -357,4 +357,119 @@ Future non-compliant resource creation is blocked.
 * If not → request is denied
 
 ## Azure policy resources
+
+There are 6 policy resources in Azure
+
+**a) Definitions**
+
+Define policy effect and logic
+
+describes a resource compliant condition and the effect to take if the condition is met.
+
+Definitions are saved or deployed to a _definition location_ (management group or subscription)
+
+two types
+
+* built-in
+
+Generated and provided by Azure resource providers, available by default
+
+a group of built-in definitions is a built-in initiative
+
+* custom
+
+Written by a policy user
+
+a group of custom definitions is a custom initiative
+
+**b) Initiatives (policy sets)**
+
+A group of multiple definitions
+
+An initiative groups multiple policy definitions into a single item to simplify assignment and management.
+
+initiatives are saved or deployed to a _definition location_ (management group or subscription)
+
+**c) Assignments**
+
+Policy assignments define which resources are evaluated by a policy definition or initiative.
+
+they are applied to a specific scope (management group, subscription, resource group) and support several optional properties including&#x20;
+
+* the resource scope and policy definitions
+* optional resource selectors for gradual rollout
+* optional overrides to changes a policy's effect without modifying the definition
+* enforcementMode can be disabled for 'what-if' scenarios
+* optional _excluded_ scopes
+* noncompliance messages
+* parameters can be assigned values
+* deployifnotexists - If you have a policy with the deployIfNotExists effect type, a managed identity can be assigned (system-assigned or user-assigned) to turn on remediation actions.
+
+policies and initiatives are assigned to a specific scope (management group, subscription or resource group)
+
+> **enforcementMode** is particularly useful — you can disable it to simulate policy effects without actually enforcing them, equivalent to audit mode but set at assignment level rather than changing the definition itself.
+
+**d) Attestations**
+
+Attestations are used to _manually set the compliance state of resources_ targeted by manual policies  - where automated evaluation isn't possible and a human must assert compliance.&#x20;
+
+Each applicable resource requires one attestation per manual policy assignment.
+
+**e) Exemptions**
+
+Exemptions exclude a resource or resource hierarchy from policy evaluation.
+
+two exemption categories exist
+
+* Mitigated
+
+the exemption is granted because the policy intent is met through another method.
+
+* Waiver
+
+The exemption is granted because the noncompliance state of the resource is temporarily accepted.
+
+**f) Remediations**
+
+Remediation tasks bring non-compliant resources into compliance for policies with _modify_ or _deployifnotExists_ effects.
+
+Newly created or updated resources that fall under such policies are automatically remediated.
+
+existing non-compliant resources require a remediation task to be triggered.
+
+**Quick Reference**
+
+<table><thead><tr><th width="253.70172119140625">Resource</th><th>Purpose</th></tr></thead><tbody><tr><td>Definition</td><td>The rule — what to check and what to do if it fails</td></tr><tr><td>Initiative</td><td>A bundle of definitions treated as one unit</td></tr><tr><td>Assignment</td><td>Attaches a definition/initiative to a scope</td></tr><tr><td>Exemption</td><td>Excludes a resource from evaluation (mitigated or waiver)</td></tr><tr><td>Attestation</td><td>Manual compliance declaration for manual policies</td></tr><tr><td>Remediation</td><td>Fixes existing non-compliant resources</td></tr></tbody></table>
+
+{% hint style="info" %}
+Know the difference between **exclusions** (set at assignment time, resource never evaluated) and **exemptions** (set after assignment, resource evaluated but excluded from enforcement). Also remember that remediation only applies to **modify** and **deployIfNotExists** effects — not Deny or Audit policies.
+{% endhint %}
+
+**deployifnotexists**
+
+**A concrete example**
+
+Policy: _"Every VM must have the Log Analytics agent installed."_
+
+Without deployIfNotExists:
+
+* VM is created without the agent
+* Policy flags it as non-compliant
+* An admin has to manually fix it
+
+With deployIfNotExists:
+
+* VM is created without the agent
+* Policy detects the agent is missing
+* Policy **automatically deploys the agent** to the VM
+
+**deployIfNotExists vs modify**
+
+These two are often confused:
+
+<table><thead><tr><th width="184.4034423828125">Effect</th><th>What it does</th></tr></thead><tbody><tr><td><code>deployIfNotExists</code></td><td>Deploys a <strong>separate child resource</strong> if it doesn't exist (e.g. install an extension onto a VM)</td></tr><tr><td><code>modify</code></td><td>Changes a <strong>property on the existing resource</strong> itself (e.g. add a tag, change a setting)</td></tr></tbody></table>
+
+## Azure Policy definitions
+
+
 

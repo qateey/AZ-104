@@ -703,6 +703,10 @@ Anytime you do anything with Azure resources, Azure Resource Manager is involved
 * ARM authenticates and authorises the request
 * ARM sends the request to the Azure service, which takes the requested action. You see consistent results and capabilities in all the different tools, because all requests are handled through the same API
 
+Resource manager has inbuilt validation - it checks templates before deployment to ensure deployment succeeds.
+
+Resource Manager orchestrates the deployment of the resources so they're created in the correct order. When possible, resources are created in parallel, so ARM template deployments finish faster than scripted deployments.
+
 #### Infrastructure as Code
 
 managing infrastructure through code and templates, instead of manual configuration.
@@ -711,7 +715,7 @@ Fundamentally, this can start by using PowerShell or Azure CLI, then grow into a
 
 **ARM templates**
 
-Define desired Azure resources in declarative JSON.
+Define desired Azure resources in declarative JSON (Javascript Object Notation).
 
 Benefits
 
@@ -720,6 +724,30 @@ Benefits
 * extensibility - add deployment scripts when additional setup actions are required
 * repeatable results - consistent outcomes
 * orchestration - ARM handles dependency order and parallel deployment automatically
+* you can store code in a repository and version it
+* you can integrate ARM templates into a CI/CD pipeline (Azure Pipelines)
+* idempotent - you can deploy the same template many times and get the same resource types in the same state
+
+If your deployment becomes too complex, you can break it down into smaller reusable components, which can be linked together at deployment time.
+
+_**Template File structure**_
+
+* schema (required) - a required section that specifies the JSON schema that describes the structure of JSON data, e.g., [https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#](https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json)
+* contentVersion (required) - version of your template, e.g., 1.0.0.1
+* apiProfile (optional) - define a collection of API versions for resource types
+* parameters (optional) - values that are provided during deployment, can be provided in a parameter file, command line parameters, or in the Azure portal. Upto 256 parameters per template are allowed
+* variables (optional) - define values that are used to simplify template language expressions
+* functions (optional) - define user-defined functions that are available within the template, useful for expressions used repeatedly
+* resources (required) - defines the actual items you want to deploy or update in a resource group or subscription
+* output (optional) - specify the values that are returned at the end of the deployment
+
+_**Deploying an ARM template**_
+
+You can deploy an ARM template in the following ways
+
+* Deploy a local template
+* Deploy a linked template
+* Deploy in a continuous deployment pipeline
 
 **Bicep**
 
@@ -733,4 +761,107 @@ Benefits
 * built-in orchestration.
 * modularity - Reuse Bicep modules.
 
+**Declarative vs Imperative**
+
+Declarative - specify the end result - declare what you want to deploy
+
+Imperative - define step-by-step instructions for the end result - write a sequence of instructions for how to deploy a resource
+
 ## Control and organize Azure resources with Azure Resource Manager
+
+### Principles of resource groups
+
+Resource group - a logical container of resources
+
+All resources must be in a resource group, and a resource can only be in one resource group
+
+Many resources can be moved across resource groups, others have specific limitations or requirements to move.
+
+Resource groups cannot be nested.
+
+Resource groups provide
+
+* logical grouping - organize resources based on
+  * department
+  * authorization - who needs to administer them e.g. database team for SQL servers
+  * billing - understand where costs are allocated
+  * lifecycle - e.g., scratch resource group can be deleted anytime, production should not be deleted
+  * environment - prod, qa, dev
+  * resource type - e.g. databases, network
+  * combination of the above criteria
+* Lifecycle management - deletion of a resource group deletes everything in it
+* authorization - a scope for applying RBAC
+
+Adopt a naming convention for naming resource groups, so that they are easy to identify. Enforce the naming convention via Azure policy.
+
+### Creating a resource group
+
+via
+
+* Azure portal
+* Azure powershell
+* Azure CLI
+* Azure SDKs
+* ARM templates
+
+### Use Tagging to organize resources
+
+Tags are name/value pairs of text data that you can apply to resources and resource groups.&#x20;
+
+Tags allow you to associate custom details about your resource.
+
+#### Tag properties
+
+* A resource can have up to 50 tags.
+* The name value is limited to 512 characters for all types of resources except storage accounts, which have a limit of 128 characters.&#x20;
+* The tag value is limited to 256 characters for all types of resources.&#x20;
+* Tags aren't inherited from parent resources.&#x20;
+* Not all resource types support tags
+* You can't apply tags to classic resources
+
+You can use Azure Policy to automatically add or enforce tags for resources your organization creates based on policy conditions that you define. e.g., require that a department tag is entered when someone creates a virtual network in a specific group
+
+#### Tagging for organization
+
+You can use tags to organize
+
+* For billing - use tags to group usage by cost center
+* to categorize costs  - billing usage for production vs dev VMs
+* for resource retrieval - retrieve resources that have a specific tag name or value, as well as their related resources
+* to monitor or track down impacted resources - monitoring systems can use tag data with alerts, e.g., VM with tag financedepartment, will help notify the affected system owners.&#x20;
+* for dependency mapping - example with a monitoring system, if a virtual network is impacted, then you know which VM might be affected
+* for automation - use tags to support automation, e.g., shutdown:6pm
+
+### Use policies to enforce standards
+
+Apply Azure policies on resources having particular tags - associate tags with a policy - using parameters
+
+### Secure resources with RBAC
+
+Best practices for RBAC
+
+* use least privilege rule - only assign permissions required for the task to be done
+* use resource locks to ensure critical resources are not modified or deleted
+
+### Use resource locks to protect resources
+
+Resource locks are a setting that you can apply to any resource to block modification or deletion.
+
+You can set resource locks to either **Delete** or **Read-only.**
+
+* Delete - will allow all operations against the resource, but block the ability to delete it.
+* Read-only - will only read activities to be performed against it.
+  * read-only can prevent some legitimate read-only actions from happening, e.g., a read-only lock on a storage account prevents listing of keys, as this operation is backed by POST
+
+You can apply resource locks to
+
+* subscriptions
+* resource group
+* resource
+
+Resource locks are inherited when applied at higher levels.
+
+Similar to break glass. - to apply an operation on the locked object, the lock has to be lifted, helping protect the resource from inadvertent actions.
+
+##
+

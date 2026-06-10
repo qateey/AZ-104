@@ -1,5 +1,5 @@
 # Table of contents
 
 * [README](README.md)
-* [Page 1](<README (1).md>)
+* [Week 2](week-2.md)
 * [Module 2](module-2.md)

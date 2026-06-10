@@ -1,6 +1,4 @@
-# Page 1
-
-## Module 2
+# Week 2
 
 ### Describe the core architectural components of Azure
 

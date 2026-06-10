@@ -470,3 +470,267 @@ These two are often confused:
 <table><thead><tr><th width="184.4034423828125">Effect</th><th>What it does</th></tr></thead><tbody><tr><td><code>deployIfNotExists</code></td><td>Deploys a <strong>separate child resource</strong> if it doesn't exist (e.g. install an extension onto a VM)</td></tr><tr><td><code>modify</code></td><td>Changes a <strong>property on the existing resource</strong> itself (e.g. add a tag, change a setting)</td></tr></tbody></table>
 
 ### Azure Policy definitions
+
+## Azure Policy Definitions
+
+A policy - describes resource compliance conditions and the action or effects that take place if those conditions are met
+
+A policy consists of two parts
+
+* a condition - that compares a resource property field or value, accessed by using aliases to a required value
+* an effect - what happens when the policy rule is evaluated to match the condition
+
+### Anatomy of a Policy definition (JSON)
+
+* displayName - name of the policy
+* description - a description of the policy
+* policyType - read-only atribute, can be \*\* builtin - microsoft provided \*\* custom - customer created \*\* static - regulatory compliance with Microsoft ownership
+* mode - determines what gets evaluated
+* version (optional)
+* metadata - stores information about the policy definition \*\* version \*\* category - determines under which category on the Azure portal the definition falls under \*\* preview - true/false flag indicating if the policy definition is in review \*\* deprecated - true/false flag indicating if the policy definition is in deprecated \*\* portalReview - determines if the parameters require a review in the portal. \*\* all - evaluates all resource types \*\* Indexed - evaluates only resources that support tags and location
+* parameters - reusable data types for passing values at assignment time
+* policyRule - if then block: if is the condition, then is the effect
+
+### Logical operators
+
+#### Logical operators supported in the if block
+
+* not - inverts the result of the condition
+* allOf - requires all conditions to be true - similar to logical AND
+* anyOf - requires one or more conditions to be true - similar to logical OR. These can be nested to create complex evaluation logics
+
+#### Conditions - if statements
+
+Properties like fields, values, or counts can be evaluated within a condition
+
+* fields - conditions that evaluate resource property using aliases, e.g., Name, fullName, kind, type, location, ID, identity.type, tags, tags\['tagName'], property aliases
+* value - conditions that evaluate a specific value against criteria
+* count - a condition that counts how many array members meet criteria using the current() function
+
+### Policy-specific functions
+
+Beyond ARM template functions, Azure policy adds its own functions. functions can be used to introduce extra logic into a policy rule. They are resolved in a policy rule of a policy definition and in the parameter values that are assigned to the policy definitions in an initiative examples: addDays(dateTime, numberOfDaysToAdd), policy(), current(indexname),ipRangeContains(range, targetRange),requestContext().apiVersion,Field(fieldName)
+
+#### Effect Types (then blocks)
+
+defines what takes place when a condition is matched. More than one effect can be valid for a given policy definition. Examples: deny, disabled, append, modify, denyAction, audit, auditIfNotExists, deployIfNotExists, manual.
+
+Multiple policies can be assigned to a single resource at the same scope or different scopes. Each policy mostly has a different effect defined. The condition and effect for each policy is independently evaluated. The net result of layering policy definitions is considered cumulative, most restrictive - the strictest applicable policy wins (if one policy says Audit and another says Deny for the same resource, Deny wins.)
+
+#### synchronous vs asynchronous evaluation
+
+Synchronous effects are evaluated in real-time during the resource request. The resource is blocked or modified before it completes
+
+Asynchronous effects are evaluated after the resource request completes. The resource is created first, then the policy acts on it.
+
+Manual - no automated evaluation at all, requires human attestation
+
+#### Interchangeable rules
+
+It means they address the same category of problem and can be substituted depending on how strictly you want to enforce it. audit / deny/modify / append are interchangeable. These all deal with the resource itself at creation or update time. They differ only in how aggressively they act: Effect: What it does to the resource audit: Let it through, logs a warningdenyBlocks it entirely, modify / appendLets it through but fixes it So if you have a policy "resources must have a CostCentre tag" you could write it as:
+
+audit — resource is created, flagged as non-compliant in the dashboard deny — resource creation is blocked until the tag is added modify — resource is created, tag is automatically added with a default value
+
+Same rule, three different enforcement stances. That's what interchangeable means here — same condition, choice of effect depends on how strict you want to be.
+
+auditIfNotExists / deployIfNotExists are interchangeable These both deal with a related/child resource that should exist alongside the primary resource: EffectWhat it doesauditIfNotExistsFlags non-compliance if the related resource is missingdeployIfNotExistsFlags non-compliance AND automatically creates the missing resource Example: "Every VM must have the Log Analytics agent installed"
+
+auditIfNotExists — VM is created, policy checks for the agent, flags it if missing. deployIfNotExists — VM is created, policy checks for the agent, installs it if missing
+
+Again — same condition, same check, different level of automation.The&#x20;
+
+manual is not interchangeable; the manual requires a human to attest compliance — there is no automated condition you can write to replace that. It exists for things that genuinely cannot be evaluated programmatically, like "has this system been physically inspected?" No other effect can substitute for that.
+
+disabled is interchangeable with anything disabled. Simply turning the policy off entirely — it can replace any effect when you want to temporarily deactivate a policy without deleting or modifying the definition itself. Useful for testing or rollout phases.
+
+## Evaluation of resources through Azure Policy
+
+### Evaluation triggers
+
+Policy evaluations are triggered by
+
+* a policy or initiative being newly assigned or updated
+* a resource being deployed or updated via ARM, REST API, or SDK
+* a subscription being moved in a management group hierarchy
+* a policy exemption being created, updated or deleted
+* the standard 24 hour compliance cycle
+* managed resource configuration updates
+* on-demand scans
+
+### Evaluation timing
+
+understand the behaviour and timing of compliance scans.
+
+Compliance scans are triggered by various methods
+
+* automatic full scan - automatically, every 24 hours
+* manual scan for brownfield scenarios - manually triggered via `az policy state trigger-scan`
+
+delays of upto 30 minutes can occur when assigning a new policy. This is due to the ARM cache holding session data, hence it can take time for the policy to propagate in the same session.
+
+Signing out and back again refreshes the ARM cache.
+
+#### factors influencing how long it takes for a compliance scan to complete
+
+* size and complexity of a policy definition
+* number of policies - the more policies applied, the longer the scan time
+* scope size - size of the resource scope
+* system load - the system prioritizes interactive and high-important operations, of which scans are not
+* synchronous scan (Low property execution) - low priority synchronous scans have are given a low priority by the system
+
+### Resource compliance states
+
+Azure policy assigns one of the following states to each evaluated resource, listed in priority (highest ranks wins when there is a state conflict)
+
+* Non-compliant - resource does not meet the policy condition
+* Compliant - resource meets the policy condition
+* Error - template or an evaluation error
+* Conflicting - two policies at the same scope have contradicting rules
+* Protected - resource is covered by a denyAction assignment
+* Exempted/Unknown - default state for manual effect definitions
+
+Compliance percentage = (Compliant + Exempt + Unknown) resources / total number of resources Total resources include resources with Compliant, Non-compliant, Unknown, Exempt, Conflicting, and Error states. (no protected)
+
+### Enforcement Mode
+
+enforcementMode is a property of policy assignment that lets you deactivate the enforcement of certain policy effects, without disabling evaluation - it is a 'what-if' mode.
+
+enforcementMode: DoNotEnforce still evaluates resources and reports compliance states, but doesn't trigger the effect or write to the Activity Log, unlike the disabled effect, which prevents evaluation entirely.
+
+If not specified, the value 'Default' is used - enforcementMode: Default, which enables enforcement
+
+### Policy enforcement and safe deployment best practices
+
+The best practices framework focuses on minimizing the impact of policy changes while ensuring compliance and it includes 2 aspects
+
+* Start from assignment of new policies with enforcementMode disabled, to observe compliance without triggering effects.
+* Deploy policies gradually through deployment rings - starting in dev/test, then expanding to production incrementally.
+
+#### The safe deployment best practices framework for Azure assignments
+
+1. Create the definition - with the scope as root (tenant)
+2. Create an assignment - define deployment rings (1-5) by using resource selectors. Assign the policy with enforcementMode Disabled to a specific scope in ring 5. 3a. Compliance check - verify that the policy is assigned correctly and that the desired compliance state is achieved for resources in ring 5 3b. Application health check - Assess the impact of the policy for resources in ring 5 - ensure no side effects exist
+3. Repeat for each ring (non-production) - Repeat step 3
+4. update assignment (optional) - if necessary, adjust the policy definition or assignment based on the results so far. 6a. Compliance check - reevaluate compliance after making changes (same as step 3a) 6b. application health check
+5. Repeat for each ring (non-production) - repeat step 6
+6. Repeat for production rings - gradually deploy to production environments
+
+### Reacting to Policy State Changes
+
+Azure policy integrates with Azure Event Grid to push compliance state change events to event handlers such as Azure Functions, Logic Apps, custom HTTP listeners or webhooks, without requiring polling or complex code. Event grid handles routing, filtering, retry policies and dead-letter delivery
+
+## Secure your resources with Azure RBAC
+
+RBAC is about authorisation (what you're allowed to do once authenticated), not authentication (proving who you are). That's Entra ID's job. They work in sequence:
+
+Entra ID authenticates → RBAC authorises → Azure Policy governs
+
+### What is Azure RBAC
+
+It is an authorization system built on ARM that provides fine-grained access management for Azure resources. With RBAC, you can grant the exact access that users need to do their jobs.
+
+Child scopes inherit roles assigned at a higher scope.
+
+The scope of a role assignment can be a management group, subscription, resource group, or a single resource. RBAC helps ensure
+
+* People exiting the organization lose their access to company resources
+* the right balance between autonomy and central governance - users can still create and manage resources, e.g., VMs, while centrally controlling the networks those VMs use to communicate with other VMs
+
+### Azure RBAC in the Azure portal
+
+Access control (IAM) pane at a scope level, e.g., resource group, resource
+
+### How does Azure RBAC work?
+
+You control access to resources via role assignments, Combiningrol how permis,sions are enforced.
+
+To create a role assignment, you need 3 elements
+
+* a security principal (who) - a user, group or application to which you grant access
+* a role definition (what) - a colle. ction of permissions aka role A role definition lists the permissionto s the role can perform such requires you to as read, write, deleted Azure includes four fundamental built-in roles \*\* Owner - has full access to resources, can delegate to Ithers \*\* Contributor - can create and manrole's  types of Azure resources, but can't grant access to others \*\* Reader - Can view existing resources \*\* User Access Administrator - manages user access to resources You can create your own custom roles
+* scope (where) In Azure, you can specify a scope at multiple levels: management group, subscription, resource group, or resource. Scopes are structured in a parent-child relationship. When you grant access at a parent scope, the child scopes automatically inherit those permissions
+
+### Role assignment
+
+Combiniing the who, what and where to grant access.
+
+Role assignment is the process of binding a role to a security principal at a particular scope for the purpose of granting access.
+
+### Azure RBAC is an allow model.
+
+Multiple assignments are additive e.g if one assignment grants you read and another assignment write on the same resource group, you have both.
+
+Azure RBAC uses NotActions permissions. NotActions
+
+* is not a deny/explicit deny
+* it is used to subtract permissions from a roles 'Actions'
+* Effective permissions = Actions - NotActions
+* example \* in actions (can perform all actions at that scope), NotActions subtracts the ability to create/delete role assignments - prevents a contributor from escalating their own privileges
+* only subtracts within the same role definition. Cannot subtract from another role's definition.
+
+### Tools for interacting with Azure
+
+* Azure portal - web-based console to build, manage, and monitor cloud resources
+* Azure Cloud Shell - Browser-based shell available on the Azure portal. Supports both Azure PowerShell and Azure CLI
+* Azure PowerShell - Allows commands to be written in cmdlets
+* Azure CLI - Allows commands to be written in bash
+* Copilot in Azure - AI assistance for contextual guidance in natural language
+
+### Azure Arc
+
+Azure Arc works with Azure Resource Manager to extend your Azure compliance and monitoring to hybrid and multicloud configurations.
+
+It provides Unified Management across environments, including
+
+* Azure - Native Azure resources managed through ARM
+* on-premises - servers, Virtual machines, Kubernetes clusters, SQL server, Azure data services
+* other clouds - servers, Virtual machines, Kubernetes clusters, SQL server, Azure data services
+
+> Azure Arc is Microsoft's solution for managing resources that live outside of Azure — on-premises servers, other clouds (AWS, GCP), or edge locations — using the same Azure tools, policies, and governance you'd use for native Azure resources.
+
+A lightweight Arc agent is installed on the external machine. The agent
+
+* registers the resource in ARM
+* Makes the resource visible in the Azure portal
+* Allows Azure to send policy, configuration, and monitoring instructions to it
+* reports compliance state back to Azure
+
+### Azure Resource Manager and Azure ARM templates
+
+Anytime you do anything with Azure resources, Azure Resource Manager is involved. When a user sends a request from any of the Azure tools, APIs, or SDKs
+
+* ARM receives the request
+* ARM authenticates and authorises the request
+* ARM sends the request to the Azure service, which takes the requested action. You see consistent results and capabilities in all the different tools, because all requests are handled through the same API
+
+#### Infrastructure as Code
+
+managing infrastructure through code and templates, instead of manual configuration.
+
+Fundamentally, this can start by using PowerShell or Azure CLI, then grow into a repeatable environment using ARM templates (JSON) and Bicep (Declarative DSL)
+
+**ARM templates**
+
+Define desired Azure resources in declarative JSON.
+
+Benefits
+
+* declarative syntax - define what to deploy rather than step-by-step deployment commands
+* modularity - split templates into reusable components and nested templates
+* extensibility - add deployment scripts when additional setup actions are required
+* repeatable results - consistent outcomes
+* orchestration - ARM handles dependency order and parallel deployment automatically
+
+**Bicep**
+
+A declarative language for deploying resources through ARM. More concise and simpler than JSON ARM templates
+
+Benefits
+
+* support for current Azure resources - tracks Azure resource types and API versions.
+* Simple syntax - Easier to read and write than JSON ARM templates.
+* repeatable deployments.
+* built-in orchestration.
+* modularity - Reuse Bicep modules.
+
+## Control and organize Azure resources with Azure Resource Manager

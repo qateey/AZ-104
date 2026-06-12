@@ -863,5 +863,11 @@ Resource locks are inherited when applied at higher levels.
 
 Similar to break glass. - to apply an operation on the locked object, the lock has to be lifted, helping protect the resource from inadvertent actions.
 
-##
+## \*\*
+
+Roles - highest role wins
+
+allowmode??
+
+eligibe vs active roles - PIM
 

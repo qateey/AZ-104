@@ -163,3 +163,141 @@ A private IP address resource can be associated with&#x20;
 
 Addresses can be statically or dynamically assigned.
 
+## Configure Network Security groups
+
+How to limit network traffic to resources in your virtual network
+
+**Network security groups**
+
+* a list of security rules that allow or deny inbound or outbound traffic.
+* can be assigned to a subnet or a network interface, to control all traffic flowing through the NIC
+* can be associated multiple times
+* can be used to create a protected screened subnet (DMZ), controlling traffic flow to machines residing in the subnet
+* Each subnet can have a maximum of one network security group
+* Each network interface that exists in a subnet can have zero or one associated security groups
+
+**Security rules**
+
+* enable you to filter network traffic
+* Azure creates a default security rule in each network security group, including inbound and outbound traffic
+* Default security groups cannot be deleted
+* You can add security rules to a security group by adding conditions:&#x20;
+  * source  - Any, IP addresses, My IP address, Service tag, Application security group. Identifies how the security rule controls _inbound traffic_
+  * source port ranges
+  * destination - Any, IP addresses, Service tag, Application security group. Identifies how the security rule controls _outbound traffic_
+  * Service _-_ specifies the destination protocol and port range, can be predefined, e.g., SSH or a port range, e.g., 22
+  * protocol - e.g., TCP, UDP, ICMP, Default(Any)
+  * action - allow or deny
+  * Priority - unique value between 100 and 4096, lower priority rules have higher precedence. it's good practice to leave gaps between numbering, so that you can add new rules without editing existing ones
+* To override a default security rule, add a new rule with a lower priority (higher precedence)
+
+Augmented security rules - A single network security group can contain multiple values in the Source, Destination, and Service fields. This prevents security group rule sprawl
+
+{% hint style="info" %}
+For example, instead of creating four separate rules for ports 80, 443, 8080, and 8090, create one rule with all the ports.
+{% endhint %}
+
+**Default Inbound security rules**
+
+Azure creates 3 default inbound security rules per security group, in order of precedence
+
+* allow inbound traffic from your virtual network&#x20;
+  * Source: Virtual Network
+  * Destination: Virtual network
+  * Action: Allow
+* Allow inbound traffic from Azure load balancers
+  * Source: Azure load balancer
+  * Destination: Any
+  * Action: Allow
+* Deny all other traffic
+  * Source: Any
+  * Destination: Any
+  * Action: Deny
+
+_Summary: Deny all inbound traffic except from the virtual network and Azure load balancers_
+
+**Default Outbound security rules**
+
+Azure creates 3 default outbound security rules per security group, in order of precedence
+
+* Allow outbound traffic from your virtual network&#x20;
+  * Source: Virtual Network
+  * Destination: Virtual network
+  * Action: Allow
+* Allow outbound traffic to the internet
+  * Source: Any
+  * Destination: Internet
+  * Action: Allow
+* Deny all other traffic
+  * Source: Any
+  * Destination: Any
+  * Action: Deny
+
+_Summary: Deny all outbound traffic except to the virtual network and the internet_
+
+### Determine network security group effective rules
+
+How Azure ends up applying your defined security rules for a virtual machine determines the overall effectiveness of your rules.
+
+A VM can have two security groups acting on it simultaneously, one on the subnet and one on the NIC, and Azure combines them
+
+**Evaluation order**
+
+Each security group is evaluated independently.&#x20;
+
+Both inbound and outbound rules are considered based on
+
+* priority
+* processing order
+
+For inbound traffic, Azure processes the subnet security group first, followed by the NIC security group
+
+For outbound traffic, Azure processes the NIC security group first, followed by the subnet security group
+
+{% hint style="info" %}
+**INBOUND**: Internet → \[Subnet NSG] → \[NIC NSG] → VM
+
+**OUTBOUND**: VM → \[NIC NSG] → \[Subnet NSG] → Internet
+
+Both security groups are evaluated _independently_; passing one does not skip the other. Traffic must be allowed by both to get through
+{% endhint %}
+
+#### Things to consider when creating effective rules <a href="#things-to-consider-when-creating-effective-rules" id="things-to-consider-when-creating-effective-rules"></a>
+
+1. **Allowing all traffic**
+
+If you do not associate your subnet or NIC with a security group, all network traffic is allowed through the subnet or NIC, according to the default Azure security rules.
+
+2. **Critical rule - Importance of allow rules**
+
+If you have a subnet or NIC in your network security group, you must define an allow rule at each level. Otherwise, traffic is denied for any level that doesn't provide an allow rule definition
+
+<figure><img src=".gitbook/assets/image (6).png" alt=""><figcaption></figcaption></figure>
+
+3. **Intra-subnet traffic**
+
+You can prohibit intra-subnet traffic by defining a rule in the network security group to deny all inbound and outbound traffic.
+
+By default, VMs in the same subnet communicate freely; by locking down intra-subnet traffic, virtual machines in the same subnet cannot talk to one another.
+
+4. **Priority**
+
+Security groups are processed in priority order.
+
+Rules with low priority values have higher precedence
+
+This allows you to add new rules without editing existing ones.
+
+{% hint style="info" %}
+Lower number = higher priority. A rule with priority 100 beats one with priority 200.
+{% endhint %}
+
+#### Viewing effective security rules
+
+Use the 'effective security rules' link on each security group to verify which security rules are applied to your resources
+
+Network watcher - provides a consolidated view of your infrastructure rules, including both security group rules and Azure Virtual Network Manager security admin rules
+
+IP flow verify feature - evaluates traffic against both security group rules and any security admin rules that may be in effect.
+
+### Application security group

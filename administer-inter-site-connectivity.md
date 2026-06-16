@@ -165,4 +165,97 @@ That is service chaining — you chained spoke A → hub NVA → C using a UDR, 
 
 ## Introduction to Azure VPN Gateway
 
+An Azure VPN gateway is a special type of virtual network gateway that is used to send and receive encrypted network traffic&#x20;
+
+* between an Azure virtual network and an on-premises network over the _public_ internet
+* between separate Azure virtual networks across the Microsoft network backbone
+
+2 types of connections supported by the VPN gateway are
+
+* **point-to-site** e.g., a single computer connecting to the Azure virtual network. This connection is established by starting it from the client computer and is mostly used by remote workers with portable computers
+* **site-to-site** allows you to connect one network to another network across an encrypted VPN tunnel. Commonly used to connect on-premises sites to Azure or Azure virtual network to one another
+
+VPN gateways support
+
+* between 10 and 30 site-to-site connections
+* border gateway protocol (BGP)
+* aggregate throughput of 100 Mbps to 1.25 Gbps
+
+### How Azure VPN gateway works
+
+An Azure virtual network, can have two virtual network gateways
+
+* A VPN gateway - only one can be deployed in a virtual network
+* ExpressRoute gateway - a dedicated, high speed _private_ connection between on-premises network and Microsoft cloud
+
+Azure VPN gateways allow you to set up the following connections:
+
+* Connect on-premises datacenters to Azure virtual networks through a site-to-site connection.
+* Connect individual devices to Azure virtual networks through a point-to-site connection.
+* Connect Azure virtual networks to other Azure virtual networks through a network-to-network connection.
+* cannot be used to connect on-premises networks to cloud, use ExpressRoute for that
+
+When you configure a virtual network gateway, you specify the type of gateway it is. This determines how the virtual network will be used and the actions the gateway will take
+
+* the gateway type Vpn specifies a VPN gateway
+* the gateway type \[] specifies an ExpressRoute gateway
+
+A single VPN gateway can connect multiple networks
+
+{% hint style="info" %}
+A virtual network gateway is composed of two or more special VMs(active/standby) that are deployed to a specific subnet called the _gateway subnet_.&#x20;
+
+Virtual network gateway VMs host routing tables and run specific gateway services.&#x20;
+
+When you create the virtual network gateway, it creates these VMs that constitute the gateway.&#x20;
+
+Azure manages them automatically, and they don't require administrative attention.
+{% endhint %}
+
+Azure VPN gateways only support the pre-shared key method of authentication.
+
+IKE is used to set up a security association (an agreement of the encryption) between two endpoints
+
+### VPN Gateway types
+
+#### Policy based VPN gateway
+
+encrypts and routes traffic, based on a strict, predefined "policy". This policy is a fixed set of source and destination addresses.
+
+the policy based VPN gateway will then inspect every single data pickets, matching its source and destination against the defined IP rules (exact match on both source ip and destination ip), and directs it through the appropriate tunnel.
+
+Key features
+
+* support for IKEv1 only
+* use of static routing
+* rigid - Any changes to your network topology requires you to manually rewrite the VPN policy
+
+The source and destination of the tunneled networks are declared in the VPN policy and don't need to be declared in routing tables.&#x20;
+
+Use policy-based VPNs only in specific scenarios that require them, such as for compatibility with legacy on-premises VPN devices.
+
+#### Route based VPN gateway
+
+treats an IPsec tunnel just like any other standard network interface or virtual tunnel interface (VTI)
+
+Instead of looking at strict hardcoded IP policies, it relies on standard IP routing to decide where to send traffic.
+
+the gateway uses static or dynamic routing tables to determine the tunnel interface a packet should travel through
+
+Key features
+
+* dynamic - highly resilient to changes in the network topology
+* supports both static and dynamic routing
+* supports IKEv2&#x20;
+* uses any-to-any (wildcard) traffic selectors
+
+With dynamic routing, data packets are encrypted based on network routing tables that are created dynamically using routing protocols such as BGP (Border Gateway Protocol)
+
+### VPN gateway requirements
+
+* virtual network - with enough address space for the additional subnet you'll need for the VPN gateway
+* gateway subnet - a subnet called GatewaySubnet, requires a /27 mask and cannot be used for other services
+* public IP address - (only when using a non-zone aware Azure VPN gateway) a dynamic public IP address that is used as the target for your on-premises device. The IP does not change unless you delete and recreate the VPN gateway
+* local network gateway - an on-premises target where the VPN gateway will connect to, usually a public IPV4 address
+
 ## Introduction to Azure Network Watcher

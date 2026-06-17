@@ -185,8 +185,8 @@ VPN gateways support
 
 An Azure virtual network, can have two virtual network gateways
 
-* A VPN gateway - only one can be deployed in a virtual network
-* ExpressRoute gateway - a dedicated, high speed _private_ connection between on-premises network and Microsoft cloud
+* one VPN gateway - only one can be deployed in a virtual network
+* one ExpressRoute gateway - a dedicated, high speed _private_ connection between on-premises network and Microsoft cloud
 
 Azure VPN gateways allow you to set up the following connections:
 
@@ -248,6 +248,7 @@ Key features
 * supports both static and dynamic routing
 * supports IKEv2&#x20;
 * uses any-to-any (wildcard) traffic selectors
+* can co-exist with an ExpressRoute gateway
 
 With dynamic routing, data packets are encrypted based on network routing tables that are created dynamically using routing protocols such as BGP (Border Gateway Protocol)
 
@@ -258,4 +259,70 @@ With dynamic routing, data packets are encrypted based on network routing tables
 * public IP address - (only when using a non-zone aware Azure VPN gateway) a dynamic public IP address that is used as the target for your on-premises device. The IP does not change unless you delete and recreate the VPN gateway
 * local network gateway - an on-premises target where the VPN gateway will connect to, usually a public IPV4 address
 
+### Azure VPN gateway sizes <a href="#azure-vpn-gateway-sizes" id="azure-vpn-gateway-sizes"></a>
+
+When you create a virtual network gateway, you need to specify a gateway SKU. You should select a SKU that satisfies your requirements based on the types of workloads, throughput, features, and SLAs.
+
+| Gateway SKUs - Generation1 | Maximum site-to-site VPN tunnels | Aggregate throughput | BGP support   |
+| -------------------------- | -------------------------------- | -------------------- | ------------- |
+| Basic                      | 10                               | 100 Mbps             | Not supported |
+| VpnGw1/Az                  | 30                               | 650 Mbps             | Supported     |
+| VpnGw2/Az                  | 30                               | 1 Gbps               | Supported     |
+| VpnGw3/Az                  | 30                               | 1.25 Gbps            | Supported     |
+
 ## Introduction to Azure Network Watcher
+
+Azure Network Watcher provides a suite of tools to monitor, diagnose, view metrics, and enable or disable logs for Azure IaaS (Infrastructure-as-a-Service) resources.&#x20;
+
+Network Watcher enables you to monitor and repair the network health of IaaS products like virtual machines (VMs), virtual networks (VNets), application gateways, load balancers, etc.
+
+It groups its capabilities into three areas:
+
+***
+
+**Monitoring**
+
+* **Topology** — interactive visual map of all resources and their relationships across subscriptions, resource groups, and regions. Useful at the start of troubleshooting to see the full picture.
+* **Connection monitor** — ongoing end-to-end connectivity monitoring, including latency, between Azure and hybrid endpoints, useful for verifying multi-tier app or hybrid scenario communication. An agent needs to be installed on the resources you want to monitor.
+
+***
+
+**Network Diagnostic Tools**
+
+* **IP flow verify** — checks whether a packet to/from a VM's IP is allowed or denied, and which NSG rule is responsible.
+* **NSG diagnostics** — similar to IP flow verify but works at VM scale set or application gateway level; can also suggest adding a new rule.
+* **Next hop** — validates routing by showing where traffic is actually sent next (type, IP, route table ID).
+* **Effective security rules** — shows the aggregated NSG rules applied to a NIC and its subnet.
+* **Connection troubleshoot** — point-in-time connection test (as opposed to connection monitor's continuous monitoring).
+* **Packet capture** — remotely captures network traffic to/from a VM or scale set.
+* **VPN troubleshoot** — diagnoses virtual network gateways and VPN connections.
+
+***
+
+**Traffic**
+
+* **Flow logs** — logs IP traffic through NSGs or VNets and stores it in Azure Storage.
+* **Traffic analytics** — visualizes flow log data for richer insight into traffic patterns.
+
+***
+
+For AZ-104 purposes, the key things to remember: Network Watcher is **IaaS-scoped**, it's your go-to for **NSG rule debugging** (IP flow verify / NSG diagnostics), **routing issues** (next hop), and **VPN gateway troubleshooting**.
+
+Network Watcher becomes automatically available when you create a virtual network in an Azure region in your subscription.
+
+### When to use Network Watcher
+
+You can use network watcher in the following scenarios
+
+* Resolve connectivity issues related to IaaS VMs.
+  * IP flow verify - specify a local and remote port, the protocol (TCP/UDP), the local IP, and the remote IP to check the connection status.
+* Troubleshoot VPN connections.
+  * VPN troubleshooting tool
+* Determine cross region network latencies.
+
+### When not to use Network Watcher
+
+* for advanced functionality that could be provided by 3rd party tools
+* when the resource is not an IaaS resource, PaaS or other similar types are not supported
+* does not support web analytics
+

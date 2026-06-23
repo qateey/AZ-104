@@ -6,3 +6,4 @@
 * [Administer Virtual Networking](administer-virtual-networking.md)
 * [Administer Inter-site Connectivity](administer-inter-site-connectivity.md)
 * [Administer Network Traffic](administer-network-traffic.md)
+* [Introduction to Azure Virtual Machine](introduction-to-azure-virtual-machine.md)

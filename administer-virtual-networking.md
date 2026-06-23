@@ -71,9 +71,16 @@ Requirements for creating a virtual network
 * When you create a virtual network, you need to define the IP address space for the network.
 * Plan to use an IP address space that's not already in use in your organization.
 * The address space for the virtual network can be either on-premises or in the cloud, but not both.
-*   To create a virtual network, you need to define at least one subnet.
+* To create a virtual network, you need to define _at least one subnet._
+* Delete the default subnet if not required
+
+{% hint style="info" %}
+By default, resources deployed to a virtual network use Azure DNS for domain name resolution. To use a different server, select custom and enter a DNS server IP address
+{% endhint %}
 
 
+
+<figure><img src=".gitbook/assets/image (16).png" alt=""><figcaption></figcaption></figure>
 
 ### Plan IP addressing
 
@@ -216,6 +223,8 @@ Azure creates 3 default inbound security rules per security group, in order of p
 
 _Summary: Deny all inbound traffic except from the virtual network and Azure load balancers_
 
+<figure><img src=".gitbook/assets/image (18).png" alt=""><figcaption></figcaption></figure>
+
 **Default Outbound security rules**
 
 Azure creates 3 default outbound security rules per security group, in order of precedence
@@ -234,6 +243,10 @@ Azure creates 3 default outbound security rules per security group, in order of 
   * Action: Deny
 
 _Summary: Deny all outbound traffic except to the virtual network and the internet_
+
+<figure><img src=".gitbook/assets/image (19).png" alt=""><figcaption></figcaption></figure>
+
+After creating an NSG, associate a NIC or a subnet with it
 
 ### Determine network security group effective rules
 
@@ -746,7 +759,7 @@ Changing the NS details is called _domain delegation_.
 
 4. _**Verify the delegation of domain name services**_
 
-The next step is to verify that the delegated domain now points to the Azure DNS zone you created for the domain. This process can take as few as 10 minutes, but might take longer.
+The next step is to verify that the delegated domain now points to the Azure DNS zone you created for the domain. This process can take as few as 10 minutes, but it might take longer.
 
 To verify the success of the domain delegation, query the start of authority (SOA) record. The SOA record is automatically created when the Azure DNS zone is set up. You can verify the SOA record using a tool like nslookup.
 

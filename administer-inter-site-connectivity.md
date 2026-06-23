@@ -293,7 +293,7 @@ It groups its capabilities into three areas:
 * **NSG diagnostics** — similar to IP flow verify but works at VM scale set or application gateway level; can also suggest adding a new rule.
 * **Next hop** — validates routing by showing where traffic is actually sent next (type, IP, route table ID).
 * **Effective security rules** — shows the aggregated NSG rules applied to a NIC and its subnet.
-* **Connection troubleshoot** — point-in-time connection test (as opposed to connection monitor's continuous monitoring).
+* **Connection troubleshoot** — _point-in-time_ connection test (as opposed to connection monitor's continuous monitoring).
 * **Packet capture** — remotely captures network traffic to/from a VM or scale set.
 * **VPN troubleshoot** — diagnoses virtual network gateways and VPN connections.
 

@@ -70,3 +70,26 @@ There are two separate costs that the subscription is charged for every VM:&#x20
   * You're charged separately for the storage the VM uses.&#x20;
   * The status of the VM has no relation to the storage charges that are incurred.&#x20;
   * If the VM is stopped/deallocated and you aren’t billed for the running VM, you're still charged for the storage used by the disks.
+
+## Creating and managing Azure Virtual Machines
+
+### Resource manager templates
+
+### Azure CLI
+
+### Azure Powershell
+
+### Terraform
+
+### Programmatic APIs
+
+### Azure REST API
+
+### Azure Client SDK
+
+### Azure VM extensions
+
+### Azure automation services
+
+### Auto-shutdown
+
